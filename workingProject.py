@@ -785,6 +785,14 @@ def search_food_items_bytype(type_entry):
     connection = connect_to_db()
     if connection:
         cursor = connection.cursor()
+        cursor.execute("""
+                        UPDATE food_item fi
+                            SET foodItem_rating = (
+                                SELECT AVG(rating)
+                                FROM review
+                                WHERE foodItem_id = fi.foodItem_id
+                            );
+                    """)
         query = """
         SELECT fi.foodItem_id, fi.foodItem_name, fi.foodItem_price, fi.foodItem_type, fi.foodItem_desc, fi.foodItem_rating, fe.foodEst_name
         FROM serves s
@@ -805,6 +813,14 @@ def search_food_items_byprice(price_min_entry, price_max_entry):
     connection = connect_to_db()
     if connection:
         cursor = connection.cursor()
+        cursor.execute("""
+                        UPDATE food_item fi
+                            SET foodItem_rating = (
+                                SELECT AVG(rating)
+                                FROM review
+                                WHERE foodItem_id = fi.foodItem_id
+                            );
+                    """)
         query = """
         SELECT fi.foodItem_id, fi.foodItem_name, fi.foodItem_price, fi.foodItem_type, fi.foodItem_desc, fi.foodItem_rating, fe.foodEst_name
         FROM serves s
@@ -847,6 +863,14 @@ def search_establishment_food_items(establishment_name_entry):
     connection = connect_to_db()
     if connection:
         cursor = connection.cursor()
+        cursor.execute("""
+                        UPDATE food_item fi
+                            SET foodItem_rating = (
+                                SELECT AVG(rating)
+                                FROM review
+                                WHERE foodItem_id = fi.foodItem_id
+                            );
+                    """)
         query = """
         SELECT fi.foodItem_id, fi.foodItem_name, fi.foodItem_price, fi.foodItem_type, fi.foodItem_desc, fi.foodItem_rating
         FROM food_item fi
