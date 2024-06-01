@@ -924,6 +924,10 @@ def add_food_item(item_name_entry, item_price_entry, item_type_entry, item_desc_
     if connection:
         cursor = connection.cursor()
         cursor.execute("INSERT INTO food_item (foodItem_name, foodItem_price, foodItem_type, foodItem_desc, foodEst_id) VALUES (%s, %s, %s, %s, %s)", (name, price, type_, desc, est_id))
+        cursor.execute("""
+            INSERT INTO serves (foodEst_id, foodItem_id)
+               VALUE(%s, (SELECT foodItem_id FROM food_item WHERE foodItem_name = %s));
+        """, (est_id, name))
         connection.commit()
         cursor.close()
         connection.close()
