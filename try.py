@@ -895,6 +895,7 @@ def fetch_food_items(est_id):
         connection.close()
         return records
 
+#Helper to fetch food types
 def fetch_food_types():
     connection = connect_to_db()
     if connection:
@@ -910,7 +911,6 @@ def fetch_food_types():
         finally:
             connection.close()
     return []
-
 
 # Helper to get food item reviews for a specific user
 def get_food_reviews_by_user(userid):
@@ -1253,10 +1253,25 @@ def delete_own_review(userid, right_frame):
 
 # 2F - Add a food establishment
 def add_food_establishment_form(right_frame):
+    def fetch_food_types():
+        connection = connect_to_db()
+        if connection:
+            try:
+                cursor = connection.cursor()
+                cursor.execute("SHOW COLUMNS FROM food_establishment LIKE 'foodEst_type'")
+                result = cursor.fetchone()[1]
+                food_types = result.replace("enum(", "").replace(")", "").replace("'", "").split(",")
+                return food_types
+            except Exception as e:
+                messagebox.showerror("Database Error", f"Failed to fetch food types: {e}")
+            finally:
+                connection.close()
+        return []
+
     def add_food_establishment():
         name = est_name_entry.get()
         location = est_location_entry.get()
-        type_ = est_type_entry.get()
+        type_ = est_type_combobox.get()
         connection = connect_to_db()
         if connection:
             try:
@@ -1274,6 +1289,9 @@ def add_food_establishment_form(right_frame):
     for widget in right_frame.winfo_children():
         widget.destroy()
 
+    # Fetch food types
+    food_types = fetch_food_types()
+
     # Create input fields and labels in the right_frame
     tk.Label(right_frame, text="Food Establishment Name:").grid(row=0, column=0, padx=10, pady=10)
     est_name_entry = tk.Entry(right_frame)
@@ -1283,9 +1301,10 @@ def add_food_establishment_form(right_frame):
     est_location_entry = tk.Entry(right_frame)
     est_location_entry.grid(row=1, column=1, padx=10, pady=10)
 
-    tk.Label(right_frame, text="Type:").grid(row=2, column=0, padx=10, pady=10)
-    est_type_entry = tk.Entry(right_frame)
-    est_type_entry.grid(row=2, column=1, padx=10, pady=10)
+    ttk.Label(right_frame, text="Estab Type:").grid(row=2, column=0, padx=10, pady=10)
+    selected_est_type = tk.StringVar()
+    est_type_combobox = ttk.Combobox(right_frame, textvariable=selected_est_type, values=food_types)
+    est_type_combobox.grid(row=2, column=1, padx=10, pady=10)
 
     add_button = tk.Button(right_frame, text="Add Food Establishment", command=add_food_establishment)
     add_button.grid(row=3, columnspan=2, pady=20)
@@ -1303,7 +1322,6 @@ def delete_food_establishment(est_id_entry):
         connection.close()
         messagebox.showinfo("Success", "Food establishment deleted successfully")
 
-
 # 2F -- Update a food establishment
 def update_food_establishment(est_name_entry, est_location_entry, est_type_entry, est_id_entry):
     id_ = est_id_entry.get()
@@ -1318,7 +1336,6 @@ def update_food_establishment(est_name_entry, est_location_entry, est_type_entry
         cursor.close()
         connection.close()
         messagebox.showinfo("Success", "Food establishment updated successfully")
-
 
 # 3F -- Add a food item
 def add_food_item_form(right_frame):
@@ -1381,7 +1398,6 @@ def add_food_item_form(right_frame):
 
     add_button = tk.Button(right_frame, text="Add Food Item", command=add_food_item)
     add_button.grid(row=5, columnspan=2, pady=20)
-
 
 # 3F -- Delete a food item
 def delete_food_item(item_id_entry):
