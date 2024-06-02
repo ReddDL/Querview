@@ -8,7 +8,7 @@ def connect_to_db():
     try:
         connection = mysql.connector.connect(
             host='localhost',
-            database='127projectV2',
+            database='127Project',
             user='root',
             password='new_password' # replace ng password niyo 
         )
@@ -395,6 +395,29 @@ def view_items_from_estab():
                 connection = connect_to_db()
                 if connection:
                     cursor = connection.cursor()
+                    # cursor.execute("""
+                    #     SELECT 
+                    #         fi.foodItem_id, 
+                    #         fi.foodItem_name, 
+                    #         fi.foodItem_price, 
+                    #         fi.foodItem_type, 
+                    #         fi.foodItem_desc, 
+                    #         AVG(r.rating) AS 'Rating' 
+                    #     FROM review r 
+                    #     JOIN food_item fi 
+                    #     ON r.foodItem_id = fi.foodItem_id 
+                    #     WHERE r.foodItem_id IS NOT NULL 
+                    #     AND fi.foodEst_id = %s 
+                    #     GROUP BY r.foodItem_id;
+                    # """, (selected_food_establishment_id,))
+                    cursor.execute("""
+                        UPDATE food_item fi
+                            SET foodItem_rating = (
+                                SELECT AVG(rating)
+                                FROM review
+                                WHERE foodItem_id = fi.foodItem_id
+                            );
+                    """)
                     cursor.execute("""
                         SELECT 
                             fi.foodItem_id, 
@@ -402,13 +425,9 @@ def view_items_from_estab():
                             fi.foodItem_price, 
                             fi.foodItem_type, 
                             fi.foodItem_desc, 
-                            AVG(r.rating) AS 'Rating' 
-                        FROM review r 
-                        JOIN food_item fi 
-                        ON r.foodItem_id = fi.foodItem_id 
-                        WHERE r.foodItem_id IS NOT NULL 
-                        AND fi.foodEst_id = %s 
-                        GROUP BY r.foodItem_id;
+                            fi.foodItem_rating
+                        FROM food_item fi  
+                        WHERE fi.foodEst_id = %s 
                     """, (selected_food_establishment_id,))
                     items = cursor.fetchall()
                     cursor.close()
@@ -895,15 +914,16 @@ def delete_food_establishment(est_id_entry):
         messagebox.showinfo("Success", "Food establishment deleted successfully")
 
 # Function to add a food item
-def add_food_item(item_name_entry, item_price_entry, item_type_entry, item_desc_entry):
+def add_food_item(item_name_entry, item_price_entry, item_type_entry, item_desc_entry, item_estid_entry):
     name = item_name_entry.get()
     price = item_price_entry.get()
     type_ = item_type_entry.get()
     desc = item_desc_entry.get()
+    est_id = item_estid_entry.get()
     connection = connect_to_db()
     if connection:
         cursor = connection.cursor()
-        cursor.execute("INSERT INTO food_item (foodItem_name, foodItem_price, foodItem_type, foodItem_desc) VALUES (%s, %s, %s, %s)", (name, price, type_, desc))
+        cursor.execute("INSERT INTO food_item (foodItem_name, foodItem_price, foodItem_type, foodItem_desc, foodEst_id) VALUES (%s, %s, %s, %s, %s)", (name, price, type_, desc, est_id))
         connection.commit()
         cursor.close()
         connection.close()
@@ -1196,7 +1216,8 @@ def make_review(userid):
             show_establishments(establishments, "Food Item")
         elif choice == "Establishment":
             establishments = fetch_food_establishments()
-            show_review_form(establishments, "Establishment")
+            show_establishments(establishments, "Establishment")
+            #show_review_form(establishments, "Establishment")
 
     def show_establishments(establishments, review_type):
         est_window = tk.Toplevel()
@@ -1215,7 +1236,7 @@ def make_review(userid):
                     # print(items)
                     show_review_form(items, "Food Item", selected_est_str)
                 else:
-                    show_review_form([est for est in establishments if est[0] == selected_est_str], "Establishment", selected_est_str)
+                    show_review_form([est for est in establishments if est[0] == selected_est_str], "Establishment", est_id)
 
 
         ttk.Button(est_window, text="Next", command=next_step).grid(row=1, columnspan=2, pady=10)
@@ -1229,13 +1250,24 @@ def make_review(userid):
             selected_item = tk.StringVar()
             ttk.Combobox(review_window, textvariable=selected_item, values=[item[1] for item in items]).grid(row=0, column=1, padx=10, pady=10)
 
-        ttk.Label(review_window, text="Rating:").grid(row=1, column=0, padx=10, pady=10)
-        rating_entry = ttk.Entry(review_window)
-        rating_entry.grid(row=1, column=1, padx=10, pady=10)
+            ttk.Label(review_window, text="Rating:").grid(row=1, column=0, padx=10, pady=10)
+            rating_entry = ttk.Entry(review_window)
+            rating_entry.grid(row=1, column=1, padx=10, pady=10)
 
-        ttk.Label(review_window, text="Content:").grid(row=2, column=0, padx=10, pady=10)
-        content_entry = ttk.Entry(review_window)
-        content_entry.grid(row=2, column=1, padx=10, pady=10)
+            ttk.Label(review_window, text="Content:").grid(row=2, column=0, padx=10, pady=10)
+            content_entry = ttk.Entry(review_window)
+            content_entry.grid(row=2, column=1, padx=10, pady=10)
+
+        else:
+
+            ttk.Label(review_window, text="Rating:").grid(row=1, column=0, padx=10, pady=10)
+            rating_entry = ttk.Entry(review_window)
+            rating_entry.grid(row=1, column=1, padx=10, pady=10)
+
+            ttk.Label(review_window, text="Content:").grid(row=2, column=0, padx=10, pady=10)
+            content_entry = ttk.Entry(review_window)
+            content_entry.grid(row=2, column=1, padx=10, pady=10)
+
 
         def submit_review():
             if review_type == "Food Item":
@@ -1425,7 +1457,11 @@ def show_main_app(userid):
     item_desc_entry = ttk.Entry(item_frame)
     item_desc_entry.grid(row=4, column=1)
 
-    ttk.Button(item_frame, text="Add", command=lambda:add_food_item(item_name_entry, item_price_entry, item_type_entry, item_desc_entry)).grid(row=5, column=0)
+    ttk.Label(item_frame, text="Food Establishment ID:").grid(row=4, column=0)
+    item_estid_entry = ttk.Entry(item_frame)
+    item_estid_entry.grid(row=4, column=1)
+
+    ttk.Button(item_frame, text="Add", command=lambda:add_food_item(item_name_entry, item_price_entry, item_type_entry, item_desc_entry, item_estid_entry)).grid(row=5, column=0)
     ttk.Button(item_frame, text="Update", command=lambda:update_food_item(item_name_entry, item_price_entry, item_type_entry, item_desc_entry, item_id_entry)).grid(row=5, column=1)
     ttk.Button(item_frame, text="Delete", command=lambda:delete_food_item(item_id_entry)).grid(row=5, column=2)
 
@@ -1476,7 +1512,7 @@ def show_main_app(userid):
     search_frame = ttk.LabelFrame(search_tab, text="Search Food Items")
     search_frame.pack(padx=10, pady=10)
 
-    ttk.Label(search_frame, text="Type:").grid(row=0, column=0)
+    ttk.Label(search_frame, text="Type:").grid(row=0, column=0) 
     type_entry = ttk.Entry(search_frame)
     type_entry.grid(row=0, column=1)
     ttk.Button(search_frame, text="Search by Type", command=lambda:search_food_items_bytype(type_entry)).grid(row=0, column=2)
