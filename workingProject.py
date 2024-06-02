@@ -8,9 +8,9 @@ def connect_to_db():
     try:
         connection = mysql.connector.connect(
             host='localhost',
-            database='127projectV2',
+            database='127projectv3',
             user='root',
-            password='secret' # replace ng password niyo 
+            password='052508' # replace ng password niyo 
         )
         if connection.is_connected():
             return connection
@@ -1527,6 +1527,10 @@ def add_food_item_with_choice_new():
                         "INSERT INTO food_item (foodItem_name, foodItem_price, foodItem_type, foodItem_desc, foodEst_id) VALUES (%s, %s, %s, %s, %s)",
                         (name, price, food_type, description, est_id)
                     )
+                    cursor.execute("""
+                        INSERT INTO serves (foodEst_id, foodItem_id)
+                        VALUE(%s, (SELECT foodItem_id FROM food_item WHERE foodItem_name = %s));
+                    """, (est_id, name))
                     connection.commit()
                     cursor.close()
                     connection.close()
