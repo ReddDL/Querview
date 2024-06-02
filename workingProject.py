@@ -8,9 +8,9 @@ def connect_to_db():
     try:
         connection = mysql.connector.connect(
             host='localhost',
-            database='127projectV3',
+            database='127projectV2',
             user='root',
-            password='052508' # replace ng password niyo 
+            password='secret' # replace ng password niyo 
         )
         if connection.is_connected():
             return connection
@@ -1450,6 +1450,153 @@ def make_review(userid):
     ttk.Radiobutton(review_window, text="Establishment", variable=review_type, value="Establishment").grid(row=0, column=1, padx=10, pady=10)
     ttk.Button(review_window, text="Next", command=choose_review_type).grid(row=1, columnspan=2, pady=10)
 
+def add_food_item_with_choice_new():
+    
+    establishments = fetch_food_establishments()
+    
+    def show_establishments(establishments, review_type):
+        est_window = tk.Toplevel()
+        est_window.title(f"Select Establishment for {review_type} Review")
+
+        ttk.Label(est_window, text="Select Establishment:").grid(row=0, column=0, padx=10, pady=10)
+        selected_est = tk.StringVar()
+        ttk.Combobox(est_window, textvariable=selected_est, values=[f'{est[0]} - {est[1]}' for est in establishments]).grid(row=0, column=1, padx=10, pady=10)
+
+        def next_step():
+            selected_est_str = selected_est.get()
+            if selected_est_str:
+                est_id = selected_est_str.split(' - ')[0]
+                items = fetch_food_items(est_id)
+                show_add_form(items, selected_est_str, est_id)
+
+        def show_add_form(items, selected_est_str, est_id):
+            connection = connect_to_db()
+            if connection:
+                cursor = connection.cursor()
+                cursor.execute("SHOW COLUMNS FROM food_item LIKE 'foodItem_type'")
+                result = cursor.fetchone()[1]
+                food_types = result.replace("enum(", "").replace(")", "").replace("'", "").split(",")
+                cursor.close()
+                connection.close()
+            else:
+                messagebox.showerror("Database Error", "Could not connect to the database.")
+                return
+
+            review_window = tk.Toplevel()
+            review_window.title("Add Item")
+
+            ttk.Label(review_window, text="Name:").grid(row=0, column=0, padx=10, pady=10)
+            name_entry = ttk.Entry(review_window)
+            name_entry.grid(row=0, column=1, padx=10, pady=10)
+
+            ttk.Label(review_window, text="Price:").grid(row=1, column=0, padx=10, pady=10)
+            price_entry = ttk.Entry(review_window)
+            price_entry.grid(row=1, column=1, padx=10, pady=10)
+
+            ttk.Label(review_window, text="Food Type:").grid(row=2, column=0, padx=10, pady=10)
+            selected_food_type = tk.StringVar()
+            food_type_combobox = ttk.Combobox(review_window, textvariable=selected_food_type, values=food_types)
+            food_type_combobox.grid(row=2, column=1, padx=10, pady=10)
+
+            ttk.Label(review_window, text="Description:").grid(row=3, column=0, padx=10, pady=10)
+            description_entry = ttk.Entry(review_window)
+            description_entry.grid(row=3, column=1, padx=10, pady=10)
+
+            def add_item():
+                name = name_entry.get()
+                price = price_entry.get()
+                food_type = selected_food_type.get()
+                description = description_entry.get()
+
+
+                if not all([name, price, food_type, description]):
+                    messagebox.showerror("Error", "Please fill all fields")
+                    return
+
+                connection = connect_to_db()
+                print(f"""
+                        name: {name}
+                        price: {price}
+                        type: {food_type}
+                        description: {description}
+                        est id: {est_id}
+                        """)
+                if connection:
+                    cursor = connection.cursor()
+                    cursor.execute(
+                        "INSERT INTO food_item (foodItem_name, foodItem_price, foodItem_type, foodItem_desc, foodEst_id) VALUES (%s, %s, %s, %s, %s)",
+                        (name, price, food_type, description, est_id)
+                    )
+                    connection.commit()
+                    cursor.close()
+                    connection.close()
+                    messagebox.showinfo("Success", "Item added successfully")
+                else:
+                    messagebox.showerror("Database Error", "Could not connect to the database.")
+
+            ttk.Button(review_window, text="Submit", command=add_item).grid(row=4, columnspan=2, pady=10)
+
+        ttk.Button(est_window, text="Next", command=next_step).grid(row=1, columnspan=2, pady=10)
+
+    show_establishments(establishments, "Food Item")
+
+def add_food_est_new():
+    def show_add_form():
+        connection = connect_to_db()
+        if connection:
+            cursor = connection.cursor()
+            cursor.execute("SHOW COLUMNS FROM food_establishment LIKE 'foodEst_type'")
+            result = cursor.fetchone()[1]
+            food_types = result.replace("enum(", "").replace(")", "").replace("'", "").split(",")
+            cursor.close()
+            connection.close() 
+
+        review_window = tk.Toplevel()
+        review_window.title("Add Establishment")
+
+        ttk.Label(review_window, text="Name:").grid(row=0, column=0, padx=10, pady=10)
+        name_entry = ttk.Entry(review_window)
+        name_entry.grid(row=0, column=1, padx=10, pady=10)
+
+        ttk.Label(review_window, text="Location:").grid(row=1, column=0, padx=10, pady=10)
+        location_entry = ttk.Entry(review_window)
+        location_entry.grid(row=1, column=1, padx=10, pady=10)
+
+        ttk.Label(review_window, text="Estab Type:").grid(row=2, column=0, padx=10, pady=10)
+        selected_est_type = tk.StringVar()
+        est_type_combobox = ttk.Combobox(review_window, textvariable=selected_est_type, values=food_types)
+        est_type_combobox.grid(row=2, column=1, padx=10, pady=10)
+
+        def add_estab():
+            name = name_entry.get()
+            location = location_entry.get()
+            est_type = selected_est_type.get()
+
+            if not all([name, location, est_type]):
+                messagebox.showerror("Error", "Please fill all fields")
+                return
+
+            # No need to connect to the database again here
+            print(f"name: {name}\nlocation: {location}\ntype: {est_type}")
+            connection = connect_to_db()
+            if connection:
+                cursor = connection.cursor()
+                cursor.execute(
+                    "INSERT INTO food_establishment (foodEst_name, foodEst_loc, foodEst_type) VALUES (%s, %s, %s)",
+                    (name, location, est_type)
+                )
+                connection.commit()
+                cursor.close()
+                connection.close()
+                review_window.destroy()
+                # messagebox.showinfo("Success", "Establishment added successfully")
+            else: 
+                print('no connection')
+
+        ttk.Button(review_window, text="Submit", command=add_estab).grid(row=4, columnspan=2, pady=10)
+
+    show_add_form()
+
 
 # Define the login function
 def login():
@@ -1636,6 +1783,10 @@ def show_main_app(userid):
     ttk.Button(est_frame, text="Add", command=lambda: add_food_establishment(est_name_entry, est_location_entry, est_type_entry)).grid(row=4, column=0)
     ttk.Button(est_frame, text="Update", command=lambda: update_food_establishment(est_id_entry, est_name_entry, est_location_entry, est_type_entry)).grid(row=4, column=1)
     ttk.Button(est_frame, text="Delete", command=lambda: delete_food_establishment(est_id_entry)).grid(row=4, column=2)
+
+    ttk.Button(add_update_frame, text="Add a food item", command=lambda: add_food_item_with_choice_new()).grid(row=7, column=0, pady=10)
+
+    ttk.Button(add_update_frame, text="Add a food establishment", command=lambda: add_food_est_new()).grid(row=7, column=1, pady=10)
 
     ttk.Button(add_update_frame, text="Make a Review", command=lambda: make_review(userid)).grid(row=8, column=0, pady=10)
     
