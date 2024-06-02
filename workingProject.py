@@ -8,9 +8,9 @@ def connect_to_db():
     try:
         connection = mysql.connector.connect(
             host='localhost',
-            database='127Project',
+            database='127projectV3',
             user='root',
-            password='new_password' # replace ng password niyo 
+            password='052508' # replace ng password niyo 
         )
         if connection.is_connected():
             return connection
@@ -1400,7 +1400,6 @@ def make_review(userid):
             ttk.Label(review_window, text="Content:").grid(row=2, column=0, padx=10, pady=10)
             content_entry = ttk.Entry(review_window)
             content_entry.grid(row=2, column=1, padx=10, pady=10)
-
 
         def submit_review():
             if review_type == "Food Item":
