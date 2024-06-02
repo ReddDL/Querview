@@ -1349,7 +1349,8 @@ def make_review(userid):
             show_establishments(establishments, "Food Item")
         elif choice == "Establishment":
             establishments = fetch_food_establishments()
-            show_review_form(establishments, "Establishment")
+            show_establishments(establishments, "Establishment")
+            #show_review_form(establishments, "Establishment")
 
     def show_establishments(establishments, review_type):
         est_window = tk.Toplevel()
@@ -1368,7 +1369,7 @@ def make_review(userid):
                     # print(items)
                     show_review_form(items, "Food Item", selected_est_str)
                 else:
-                    show_review_form([est for est in establishments if est[0] == selected_est_str], "Establishment", selected_est_str)
+                    show_review_form([est for est in establishments if est[0] == selected_est_str], "Establishment", est_id)
 
 
         ttk.Button(est_window, text="Next", command=next_step).grid(row=1, columnspan=2, pady=10)
@@ -1382,13 +1383,23 @@ def make_review(userid):
             selected_item = tk.StringVar()
             ttk.Combobox(review_window, textvariable=selected_item, values=[item[1] for item in items]).grid(row=0, column=1, padx=10, pady=10)
 
-        ttk.Label(review_window, text="Rating:").grid(row=1, column=0, padx=10, pady=10)
-        rating_entry = ttk.Entry(review_window)
-        rating_entry.grid(row=1, column=1, padx=10, pady=10)
+            ttk.Label(review_window, text="Rating:").grid(row=1, column=0, padx=10, pady=10)
+            rating_entry = ttk.Entry(review_window)
+            rating_entry.grid(row=1, column=1, padx=10, pady=10)
 
-        ttk.Label(review_window, text="Content:").grid(row=2, column=0, padx=10, pady=10)
-        content_entry = ttk.Entry(review_window)
-        content_entry.grid(row=2, column=1, padx=10, pady=10)
+            ttk.Label(review_window, text="Content:").grid(row=2, column=0, padx=10, pady=10)
+            content_entry = ttk.Entry(review_window)
+            content_entry.grid(row=2, column=1, padx=10, pady=10)
+
+        else:
+
+            ttk.Label(review_window, text="Rating:").grid(row=1, column=0, padx=10, pady=10)
+            rating_entry = ttk.Entry(review_window)
+            rating_entry.grid(row=1, column=1, padx=10, pady=10)
+
+            ttk.Label(review_window, text="Content:").grid(row=2, column=0, padx=10, pady=10)
+            content_entry = ttk.Entry(review_window)
+            content_entry.grid(row=2, column=1, padx=10, pady=10)
 
         def submit_review():
             if review_type == "Food Item":
