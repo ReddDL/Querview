@@ -1330,7 +1330,8 @@ def add_food_item_form(right_frame):
         price = item_price_entry.get()
         type_ = item_type_combobox.get()
         desc = item_desc_entry.get()
-        est_id = item_estid_combobox.get()
+        # Extracting the ID of the selected establishment
+        est_id = item_estid_combobox.get().split(',')[0]
         connection = connect_to_db()
         if connection:
             try:
@@ -1375,11 +1376,12 @@ def add_food_item_form(right_frame):
     item_desc_entry.grid(row=3, column=1, padx=10, pady=10)
 
     tk.Label(right_frame, text="Establishment:").grid(row=4, column=0, padx=10, pady=10)
-    item_estid_combobox = ttk.Combobox(right_frame, values=[(est[0], est[1]) for est in establishments])
+    item_estid_combobox = ttk.Combobox(right_frame, values=[f'{est[0]}, {est[1]}' for est in establishments])
     item_estid_combobox.grid(row=4, column=1, padx=10, pady=10)
 
     add_button = tk.Button(right_frame, text="Add Food Item", command=add_food_item)
     add_button.grid(row=5, columnspan=2, pady=20)
+
 
 # 3F -- Delete a food item
 def delete_food_item(item_id_entry):
