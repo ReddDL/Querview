@@ -1350,7 +1350,6 @@ def make_review(userid):
         elif choice == "Establishment":
             establishments = fetch_food_establishments()
             show_establishments(establishments, "Establishment")
-            #show_review_form(establishments, "Establishment")
 
     def show_establishments(establishments, review_type):
         est_window = tk.Toplevel()
@@ -1366,11 +1365,9 @@ def make_review(userid):
             if est_id:
                 if review_type == "Food Item":
                     items = fetch_food_items(est_id)
-                    # print(items)
                     show_review_form(items, "Food Item", selected_est_str)
                 else:
                     show_review_form([est for est in establishments if est[0] == selected_est_str], "Establishment", est_id)
-
 
         ttk.Button(est_window, text="Next", command=next_step).grid(row=1, columnspan=2, pady=10)
 
@@ -1392,7 +1389,6 @@ def make_review(userid):
             content_entry.grid(row=2, column=1, padx=10, pady=10)
 
         else:
-
             ttk.Label(review_window, text="Rating:").grid(row=1, column=0, padx=10, pady=10)
             rating_entry = ttk.Entry(review_window)
             rating_entry.grid(row=1, column=1, padx=10, pady=10)
@@ -1400,7 +1396,6 @@ def make_review(userid):
             ttk.Label(review_window, text="Content:").grid(row=2, column=0, padx=10, pady=10)
             content_entry = ttk.Entry(review_window)
             content_entry.grid(row=2, column=1, padx=10, pady=10)
-
 
         def submit_review():
             if review_type == "Food Item":
@@ -1429,17 +1424,23 @@ def make_review(userid):
                 if connection:
                     cursor = connection.cursor()
                     cursor.execute("INSERT INTO review (review_date, content, rating, userid, foodEst_id, foodItem_id) VALUES (CURDATE(), %s, %s, %s, %s, %s);", (content, rating, userid, foodEst_id, foodItem_id))
-                    # cursor.execute("INSERT INTO review (review_date, content, rating, userid, foodEst_id, foodItem_id) VALUES (CURDATE(), 'test rev', 3, 1, NULL, 1)")
+                    review_id = cursor.lastrowid  
+
+                    if foodEst_id is not None:
+                        cursor.execute("INSERT INTO reviews_foodest (foodEst_id, review_id) VALUES (%s, %s);", (foodEst_id, review_id))
+
+                    if foodItem_id is not None:
+                        cursor.execute("INSERT INTO reviews_fooditem (userid, foodItem_id) VALUES (%s, %s);", (userid, foodItem_id))
+
                     connection.commit()
                     cursor.close()
                     connection.close()
+                    
                 print(f"Review for {review_type} ID {selected_id}: Rating {rating}, Content {content}")
                 messagebox.showinfo("Success", "Review submitted successfully")
                 review_window.destroy()
             else:
                 messagebox.showerror("Error", "Please fill all fields")
-
-
 
         ttk.Button(review_window, text="Submit", command=submit_review).grid(row=3, columnspan=2, pady=10)
 
@@ -1450,7 +1451,6 @@ def make_review(userid):
     ttk.Radiobutton(review_window, text="Food Item", variable=review_type, value="Food Item").grid(row=0, column=0, padx=10, pady=10)
     ttk.Radiobutton(review_window, text="Establishment", variable=review_type, value="Establishment").grid(row=0, column=1, padx=10, pady=10)
     ttk.Button(review_window, text="Next", command=choose_review_type).grid(row=1, columnspan=2, pady=10)
-
 
 # Define the login function
 def login():
