@@ -8,9 +8,9 @@ def connect_to_db():
     try:
         connection = mysql.connector.connect(
             host='localhost',
-            database='127Project',
+            database='127projectV3',
             user='root',
-            password='new_password' # replace ng password niyo 
+            password='052508' # replace ng password niyo 
         )
         if connection.is_connected():
             return connection
