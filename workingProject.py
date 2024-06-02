@@ -443,6 +443,111 @@ def view_items_from_estab():
         root.mainloop()
 
 # 4 
+# Function to view all food items from an establishment that belong to a food type {meat | veg | etc.};
+def view_items_from_type():
+    connection = connect_to_db()
+    if connection:
+        cursor = connection.cursor()
+        cursor.execute("""
+            SELECT DISTINCT foodItem_type from food_item;
+        """)
+        records = cursor.fetchall()
+        cursor.close()
+        connection.close()
+
+        # Create a Tkinter window
+        root = tk.Tk()
+        root.title("Food Types")
+
+        # Create a Treeview to display the records
+        tree = ttk.Treeview(root)
+        tree.pack(expand=True, fill=tk.BOTH)
+
+        # Define columns
+        tree["columns"] = ("Type")
+
+        # Format columns
+        tree.column("#0", width=0, stretch=tk.NO)  # Hide first empty column
+        tree.column("Type", anchor=tk.W, width=100)
+
+        # Create headings
+        tree.heading("Type", text="Type")
+
+        # Add records to the Treeview
+        for record in records:
+            tree.insert("", tk.END, values=record)
+
+        # Create a new Treeview to display items
+        tree_reviews = ttk.Treeview(root)
+        tree_reviews.pack(expand=True, fill=tk.BOTH)
+
+        # Define columns for items
+        tree_reviews["columns"] = ("ID", "Name", "Price", "Type", "Description", "Rating")
+
+        # Format columns for items
+        tree_reviews.column("#0", width=0, stretch=tk.NO)  # Hide first empty column
+        tree_reviews.column("ID", anchor=tk.W, width=50)
+        tree_reviews.column("Name", anchor=tk.W, width=100)
+        tree_reviews.column("Price", anchor=tk.W, width=100)
+        tree_reviews.column("Type", anchor=tk.W, width=100)
+        tree_reviews.column("Description", anchor=tk.W, width=150)
+        tree_reviews.column("Rating", anchor=tk.W, width=100)
+
+        # Create headings for items
+        tree_reviews.heading("ID", text="ID")
+        tree_reviews.heading("Name", text="Name")
+        tree_reviews.heading("Price", text="Price")
+        tree_reviews.heading("Type", text="Type")
+        tree_reviews.heading("Description", text="Description")
+        tree_reviews.heading("Rating", text="Rating")
+
+        # Function to handle the selection
+        def on_select(event):
+            # Clear previous reviews
+            for child in tree_reviews.get_children():
+                tree_reviews.delete(child)
+
+            # Get the selected item
+            selected_item = tree.focus()
+            if selected_item:
+                # Extract the food type from the selected item
+                selected_food_type = tree.item(selected_item)["values"][0]
+
+                # Execute another query based on the selected food type
+                connection = connect_to_db()
+                if connection:
+                    cursor = connection.cursor()
+                    cursor.execute("""
+                        UPDATE food_item fi
+                            SET foodItem_rating = (
+                                SELECT AVG(rating)
+                                FROM review
+                                WHERE foodItem_id = fi.foodItem_id
+                            );
+                    """)
+                    cursor.execute("""
+                        SELECT 
+                            fi.foodItem_id, 
+                            fi.foodItem_name, 
+                            fi.foodItem_price, 
+                            fi.foodItem_type, 
+                            fi.foodItem_desc, 
+                            fi.foodItem_rating
+                        FROM food_item fi  
+                        WHERE fi.foodItem_type = %s 
+                    """, (selected_food_type,))  # Ensure the parameter is a tuple
+                    items = cursor.fetchall()
+                    cursor.close()
+                    connection.close()
+
+                    # Add items to the Treeview
+                    for item in items:
+                        tree_reviews.insert("", tk.END, values=item)
+
+        # Bind the selection event to the function
+        tree.bind("<ButtonRelease-1>", on_select)
+
+        root.mainloop()
 
 # 5
 # Function to view all reviews made within a month for an establishment
@@ -1405,6 +1510,10 @@ def show_main_app(userid):
     # 3 
     view_food_items_btn = ttk.Button(view_frame, text="View Food items", command=view_items_from_estab)
     view_food_items_btn.pack(fill='x')
+
+    # 4
+    view_food_items_from_type_btn = ttk.Button(view_frame, text="View Food Items based on Type", command=view_items_from_type)
+    view_food_items_from_type_btn.pack(fill='x')
 
     # 5
     view_reviews_month_estab_btn = ttk.Button(view_frame, text="View Reviews for Food Establishments in the past month", command=view_reviews_establishment_month)
