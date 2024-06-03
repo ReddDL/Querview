@@ -1685,13 +1685,6 @@ def update_food_establishment_new():
     
     update_est_window.mainloop()
 
-
-
-
-
-
-
-
 def update_food_item_new():
     # Create the Toplevel window
     update_item_window = tk.Toplevel()
@@ -1818,8 +1811,199 @@ def update_food_item_new():
     
     update_item_window.mainloop()
 
+def delete_food_item_new():
+    # Create a Tkinter window
+    root = tk.Tk()
+    root.title("Delete a Food Item")
 
+    # Create a new Treeview to display items
+    tree_items = ttk.Treeview(root)
+    tree_items.pack(expand=True, fill=tk.BOTH)
 
+    # Define columns for items
+    tree_items["columns"] = ("ID", "Name", "Price", "Type", "Description", "Rating")
+
+    # Format columns for items
+    tree_items.column("#0", width=0, stretch=tk.NO)  # Hide first empty column
+    tree_items.column("ID", anchor=tk.W, width=50)
+    tree_items.column("Name", anchor=tk.W, width=100)
+    tree_items.column("Price", anchor=tk.W, width=100)
+    tree_items.column("Type", anchor=tk.W, width=100)
+    tree_items.column("Description", anchor=tk.W, width=150)
+    tree_items.column("Rating", anchor=tk.W, width=100)
+
+    # Create headings for items
+    tree_items.heading("ID", text="ID")
+    tree_items.heading("Name", text="Name")
+    tree_items.heading("Price", text="Price")
+    tree_items.heading("Type", text="Type")
+    tree_items.heading("Description", text="Description")
+    tree_items.heading("Rating", text="Rating")
+
+    # Function to populate the TreeView with food items
+    def populate_tree():
+        # Clear previous items
+        for child in tree_items.get_children():
+            tree_items.delete(child)
+
+        # Fetch and display food items
+        connection = connect_to_db()
+        if connection:
+            cursor = connection.cursor()
+            cursor.execute("""
+                UPDATE food_item fi
+                SET foodItem_rating = (
+                    SELECT AVG(rating)
+                    FROM review
+                    WHERE foodItem_id = fi.foodItem_id
+                );
+            """)
+            cursor.execute("""
+                SELECT 
+                    fi.foodItem_id, 
+                    fi.foodItem_name, 
+                    fi.foodItem_price, 
+                    fi.foodItem_type, 
+                    fi.foodItem_desc, 
+                    fi.foodItem_rating
+                FROM food_item fi
+            """)
+            items = cursor.fetchall()
+            cursor.close()
+            connection.close()
+
+            # Add items to the Treeview
+            for item in items:
+                tree_items.insert("", tk.END, values=item)
+
+    # Function to handle the deletion of a food item
+    def delete_food_item():
+        selected_item = tree_items.selection()
+        if not selected_item:
+            messagebox.showwarning("Warning", "Please select a food item to delete.")
+            return
+
+        selected_item = selected_item[0]
+        values = tree_items.item(selected_item, "values")
+        food_item_id = values[0]
+
+        confirmed = messagebox.askyesno("Confirm Deletion", f"Are you sure you want to delete the food item '{values[1]}'?")
+        if confirmed:
+            connection = connect_to_db()
+            if connection:
+                cursor = connection.cursor()
+                try:
+                    # Delete associated reviews first
+                    cursor.execute("DELETE FROM review WHERE foodItem_id = %s", (food_item_id,))
+                    # Delete associated entries in the serves table
+                    cursor.execute("DELETE FROM serves WHERE foodItem_id = %s", (food_item_id,))
+                    # Then delete the food item
+                    cursor.execute("DELETE FROM food_item WHERE foodItem_id = %s", (food_item_id,))
+                    connection.commit()
+                    tree_items.delete(selected_item)
+                    messagebox.showinfo("Success", "Food item deleted successfully.")
+                except mysql.connector.Error as err:
+                    connection.rollback()
+                    messagebox.showerror("Error", f"Error deleting food item: {err}")
+                finally:
+                    cursor.close()
+                    connection.close()
+
+    # Populate the TreeView initially
+    populate_tree()
+
+    # Bind double-click event to delete the selected food item
+    tree_items.bind("<Double-1>", lambda event: delete_food_item())
+
+    root.mainloop()
+
+def delete_food_est_new():
+    # Create a Tkinter window
+    root = tk.Tk()
+    root.title("Delete a Food Establishment")
+
+    # Create a new Treeview to display items
+    tree_items = ttk.Treeview(root)
+    tree_items.pack(expand=True, fill=tk.BOTH)
+
+    # Define columns for items
+    tree_items["columns"] = ("ID", "Name", "Location", "Type", "Rating")
+
+    # Format columns for items
+    tree_items.column("#0", width=0, stretch=tk.NO)  # Hide first empty column
+    tree_items.column("ID", anchor=tk.W, width=50)
+    tree_items.column("Name", anchor=tk.W, width=100)
+    tree_items.column("Location", anchor=tk.W, width=100)
+    tree_items.column("Type", anchor=tk.W, width=100)
+    tree_items.column("Rating", anchor=tk.W, width=100)
+
+    # Create headings for items
+    tree_items.heading("ID", text="ID")
+    tree_items.heading("Name", text="Name")
+    tree_items.heading("Location", text="Location")
+    tree_items.heading("Type", text="Type")
+    tree_items.heading("Rating", text="Rating")
+
+    # Function to populate the TreeView with food establishments
+    def populate_tree():
+        # Clear previous items
+        for child in tree_items.get_children():
+            tree_items.delete(child)
+
+        # Fetch and display food establishments
+        connection = connect_to_db()
+        if connection:
+            cursor = connection.cursor()
+            cursor.execute("SELECT foodEst_id, foodEst_name, foodEst_loc, foodEst_type, foodEst_rating FROM food_establishment")
+            items = cursor.fetchall()
+            cursor.close()
+            connection.close()
+
+            # Add items to the Treeview
+            for item in items:
+                tree_items.insert("", tk.END, values=item)
+
+    # Function to handle the deletion of a food establishment
+    def delete_food_est():
+        selected_item = tree_items.selection()
+        if not selected_item:
+            messagebox.showwarning("Warning", "Please select a food establishment to delete.")
+            return
+
+        selected_item = selected_item[0]
+        values = tree_items.item(selected_item, "values")
+        food_est_id = values[0]
+
+        confirmed = messagebox.askyesno("Confirm Deletion", f"Are you sure you want to delete the food establishment '{values[1]}'?")
+        if confirmed:
+            connection = connect_to_db()
+            if connection:
+                cursor = connection.cursor()
+                try:
+                    # Delete related entries in the review table first
+                    cursor.execute("DELETE FROM review WHERE foodItem_id IN (SELECT foodItem_id FROM food_item WHERE foodEst_id = %s)", (food_est_id,))
+                    cursor.execute("DELETE FROM review WHERE foodEst_id = %s", (food_est_id,))
+                    # Delete related entries in other tables
+                    cursor.execute("DELETE FROM serves WHERE foodEst_id = %s", (food_est_id,))
+                    cursor.execute("DELETE FROM food_item WHERE foodEst_id = %s", (food_est_id,))
+                    cursor.execute("DELETE FROM food_establishment WHERE foodEst_id = %s", (food_est_id,))
+                    connection.commit()
+                    tree_items.delete(selected_item)
+                    messagebox.showinfo("Success", "Food establishment deleted successfully.")
+                except mysql.connector.Error as err:
+                    connection.rollback()
+                    messagebox.showerror("Error", f"Error deleting food establishment: {err}")
+                finally:
+                    cursor.close()
+                    connection.close()
+
+    # Populate the TreeView initially
+    populate_tree()
+
+    # Bind double-click event to delete the selected food establishment
+    tree_items.bind("<Double-1>", lambda event: delete_food_est())
+
+    root.mainloop()
 
 # Define the login function
 def login():
@@ -2011,11 +2195,15 @@ def show_main_app(userid):
 
     ttk.Button(add_update_frame, text="Add a food establishment", command=lambda: add_food_est_new()).grid(row=7, column=1, pady=10)
 
-    ttk.Button(add_update_frame, text="Make a Review", command=lambda: make_review(userid)).grid(row=8, column=0, pady=10)
-    
-    ttk.Button(add_update_frame, text="Update a Review", command=lambda: update_own_review(userid)).grid(row=8, column=1, pady=10)
+    ttk.Button(add_update_frame, text="Delete a food item", command=lambda: delete_food_item_new()).grid(row=8, column=0, pady=10)
 
-    ttk.Button(add_update_frame, text="Delete a Review", command=lambda: delete_own_review(userid)).grid(row=8, column=2, pady=10)
+    ttk.Button(add_update_frame, text="Delete a food establishment", command=lambda: delete_food_est_new()).grid(row=8, column=1, pady=10)
+
+    ttk.Button(add_update_frame, text="Make a Review", command=lambda: make_review(userid)).grid(row=9, column=0, pady=10)
+    
+    ttk.Button(add_update_frame, text="Update a Review", command=lambda: update_own_review(userid)).grid(row=9, column=1, pady=10)
+
+    ttk.Button(add_update_frame, text="Delete a Review", command=lambda: delete_own_review(userid)).grid(row=9, column=2, pady=10)
 
 
     # Search tab
