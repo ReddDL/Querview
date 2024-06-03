@@ -8,9 +8,9 @@ def connect_to_db():
     try:
         connection = mysql.connector.connect(
             host='localhost',
-            database='127projectV2',
+            database='127projectv2',
             user='root',
-            password='secret'  # replace ng password niyo 
+            password='andrei0421'  # replace ng password niyo 
         )
         if connection.is_connected():
             return connection
@@ -360,12 +360,12 @@ def view_items_from_type(view_right_frame):
     connection = connect_to_db()
     if connection:
         cursor = connection.cursor()
-        cursor.execute("""
-            SELECT DISTINCT foodItem_type from food_item;
-        """)
-        records = cursor.fetchall()
+        cursor.execute("SHOW COLUMNS FROM food_item LIKE 'foodItem_type'")
+        records = cursor.fetchone()[1]
         cursor.close()
         connection.close()
+
+        food_types = records.replace("enum(", "").replace(")", "").replace("'", "").split(",")
 
         # Clear previous records in the right frame
         for widget in view_right_frame.winfo_children():
@@ -390,8 +390,8 @@ def view_items_from_type(view_right_frame):
         tree.heading("Type", text="Type")
 
         # Add records to the Treeview
-        for record in records:
-            tree.insert("", tk.END, values=record)
+        for food_type in food_types:
+            tree.insert("", tk.END, values=(food_type,))
 
         # Create a Treeview to display the items in the bottom frame
         tree_reviews = ttk.Treeview(bottom_frame, columns=("ID", "Name", "Price", "Type", "Description", "Rating"), show='headings')
@@ -906,20 +906,14 @@ def fetch_food_items(est_id):
 
 #Helper to fetch food types
 def fetch_food_types():
-    connection = connect_to_db()
-    if connection:
-        try:
-            cursor = connection.cursor()
-            cursor.execute("SELECT DISTINCT foodItem_type FROM food_item;")
-            records = cursor.fetchall()
-            cursor.close()
-            connection.close()
-            return [record[0] for record in records]
-        except Exception as e:
-            messagebox.showerror("Database Error", f"Failed to fetch food types: {e}")
-        finally:
-            connection.close()
-    return []
+    conn = connect_to_db()
+    cursor = conn.cursor()
+    cursor.execute("SHOW COLUMNS FROM food_item LIKE 'foodItem_type'")
+    result = cursor.fetchone()[1]
+    cursor.close()
+    conn.close()
+    food_types = result.replace("enum(", "").replace(")", "").replace("'", "").split(",")
+    return food_types
 
 # Helper to get food item reviews for a specific user
 def get_food_reviews_by_user(userid):
