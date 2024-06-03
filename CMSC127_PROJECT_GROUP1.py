@@ -953,7 +953,7 @@ def get_establishment_reviews_by_user(userid):
         return records
     
 # 1F -- Add a food review on a food establishment or a food item
-def make_review(userid,  addupdate_right_frame):
+def make_review(userid, addupdate_right_frame):
     def choose_review_type():
         for widget in addupdate_right_frame.winfo_children():
             widget.destroy()
@@ -966,10 +966,6 @@ def make_review(userid,  addupdate_right_frame):
             show_establishments(establishments, "Establishment")
 
     def show_establishments(establishments, review_type):
-        ttk.Label( addupdate_right_frame, text="Select Establishment:").grid(row=0, column=0, padx=10, pady=10)
-        selected_est = tk.StringVar()
-
-        ttk.Combobox( addupdate_right_frame, textvariable=selected_est, values=[f'{est[0]} - {est[1]}' for est in establishments]).grid(row=0, column=1, padx=10, pady=10)
         ttk.Label(addupdate_right_frame, text="Select Establishment:").grid(row=0, column=0, padx=10, pady=10)
         selected_est = tk.StringVar()
         ttk.Combobox(addupdate_right_frame, textvariable=selected_est, values=[f'{est[0]} - {est[1]}' for est in establishments]).grid(row=0, column=1, padx=10, pady=10)
@@ -984,23 +980,23 @@ def make_review(userid,  addupdate_right_frame):
                 else:
                     show_review_form([est for est in establishments if est[0] == est_id], "Establishment", selected_est_str)
 
-        ttk.Button( addupdate_right_frame, text="Next", command=next_step).grid(row=1, columnspan=2, pady=10)
+        ttk.Button(addupdate_right_frame, text="Next", command=next_step).grid(row=1, columnspan=2, pady=10)
 
     def show_review_form(items, review_type, est_name=None):
         for widget in addupdate_right_frame.winfo_children():
             widget.destroy()
 
         if review_type == "Food Item":
-            ttk.Label( addupdate_right_frame, text="Select Food Item:").grid(row=0, column=0, padx=10, pady=10)
+            ttk.Label(addupdate_right_frame, text="Select Food Item:").grid(row=0, column=0, padx=10, pady=10)
             selected_item = tk.StringVar()
             ttk.Combobox(addupdate_right_frame, textvariable=selected_item, values=[item[1] for item in items]).grid(row=0, column=1, padx=10, pady=10)
 
-        ttk.Label( addupdate_right_frame, text="Rating:").grid(row=1, column=0, padx=10, pady=10)
-        rating_entry = ttk.Entry( addupdate_right_frame)
+        ttk.Label(addupdate_right_frame, text="Rating:").grid(row=1, column=0, padx=10, pady=10)
+        rating_entry = ttk.Entry(addupdate_right_frame)
         rating_entry.grid(row=1, column=1, padx=10, pady=10)
 
-        ttk.Label( addupdate_right_frame, text="Content:").grid(row=2, column=0, padx=10, pady=10)
-        content_entry = ttk.Entry( addupdate_right_frame)
+        ttk.Label(addupdate_right_frame, text="Content:").grid(row=2, column=0, padx=10, pady=10)
+        content_entry = ttk.Entry(addupdate_right_frame)
         content_entry.grid(row=2, column=1, padx=10, pady=10)
 
         def submit_review():
@@ -1027,6 +1023,11 @@ def make_review(userid,  addupdate_right_frame):
                         "INSERT INTO review (review_date, content, rating, userid, foodEst_id, foodItem_id) VALUES (CURDATE(), %s, %s, %s, %s, %s);",
                         (content, rating, userid, foodEst_id, foodItem_id)
                     )
+                    connection.commit()
+                    
+                    # Get the last inserted review_id
+                    review_id = cursor.lastrowid
+
                     if foodEst_id is not None:
                         cursor.execute("INSERT INTO reviews_foodest (foodEst_id, review_id) VALUES (%s, %s);", (foodEst_id, review_id))
 
@@ -1040,14 +1041,14 @@ def make_review(userid,  addupdate_right_frame):
             else:
                 messagebox.showerror("Error", "Please fill all fields")
 
-        ttk.Button( addupdate_right_frame, text="Submit", command=submit_review).grid(row=3, columnspan=2, pady=10)
+        ttk.Button(addupdate_right_frame, text="Submit", command=submit_review).grid(row=3, columnspan=2, pady=10)
 
-    for widget in  addupdate_right_frame.winfo_children():
+    for widget in addupdate_right_frame.winfo_children():
         widget.destroy()
 
     review_type = tk.StringVar(value="Food Item")
-    ttk.Radiobutton( addupdate_right_frame, text="Food Item", variable=review_type, value="Food Item").grid(row=0, column=0, padx=10, pady=10)
-    ttk.Radiobutton( addupdate_right_frame, text="Establishment", variable=review_type, value="Establishment").grid(row=0, column=1, padx=10, pady=10)
+    ttk.Radiobutton(addupdate_right_frame, text="Food Item", variable=review_type, value="Food Item").grid(row=0, column=0, padx=10, pady=10)
+    ttk.Radiobutton(addupdate_right_frame, text="Establishment", variable=review_type, value="Establishment").grid(row=0, column=1, padx=10, pady=10)
     ttk.Button(addupdate_right_frame, text="Next", command=choose_review_type).grid(row=1, columnspan=2, pady=10)
 
 # Update Helper
