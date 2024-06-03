@@ -1207,14 +1207,26 @@ def delete_review(review_id):
     connection = connect_to_db()
     if connection:
         cursor = connection.cursor()
-        cursor.execute("""
-            DELETE FROM review
-            WHERE review_id = %s
-        """, (review_id,))
-        connection.commit()
-        cursor.close()
-        connection.close()
-        messagebox.showinfo("Success", "Review deleted successfully")
+        try:
+            # Delete dependent records first
+            cursor.execute("""
+                DELETE FROM reviews_foodest
+                WHERE review_id = %s
+            """, (review_id,))
+            
+            # Delete the review
+            cursor.execute("""
+                DELETE FROM review
+                WHERE review_id = %s
+            """, (review_id,))
+            connection.commit()
+            messagebox.showinfo("Success", "Review deleted successfully")
+        except mysql.connector.Error as err:
+            connection.rollback()
+            messagebox.showerror("Error", f"Error: {err}")
+        finally:
+            cursor.close()
+            connection.close()
 
 # 1F -- Delete a food review on a food establishment or a food item
 def delete_own_review(userid, right_frame):
