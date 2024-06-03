@@ -991,7 +991,7 @@ def make_review(userid, addupdate_right_frame):
             selected_item = tk.StringVar()
             ttk.Combobox(addupdate_right_frame, textvariable=selected_item, values=[item[1] for item in items]).grid(row=0, column=1, padx=10, pady=10)
 
-        ttk.Label(addupdate_right_frame, text="Rating:").grid(row=1, column=0, padx=10, pady=10)
+        ttk.Label(addupdate_right_frame, text="Rating(1-5):").grid(row=1, column=0, padx=10, pady=10)
         rating_entry = ttk.Entry(addupdate_right_frame)
         rating_entry.grid(row=1, column=1, padx=10, pady=10)
 
@@ -1015,6 +1015,16 @@ def make_review(userid, addupdate_right_frame):
 
             rating = rating_entry.get()
             content = content_entry.get()
+
+            # Validate rating
+            try:
+                rating = int(rating)
+                if rating < 1 or rating > 5:
+                    raise ValueError
+            except ValueError:
+                messagebox.showerror("Error", "Please enter a valid rating between 1 and 5")
+                return
+
             if selected_id and rating and content:
                 connection = connect_to_db()
                 if connection:
@@ -1050,6 +1060,7 @@ def make_review(userid, addupdate_right_frame):
     ttk.Radiobutton(addupdate_right_frame, text="Food Item", variable=review_type, value="Food Item").grid(row=0, column=0, padx=10, pady=10)
     ttk.Radiobutton(addupdate_right_frame, text="Establishment", variable=review_type, value="Establishment").grid(row=0, column=1, padx=10, pady=10)
     ttk.Button(addupdate_right_frame, text="Next", command=choose_review_type).grid(row=1, columnspan=2, pady=10)
+
 
 # Update Helper
 def update_review(review_id, new_content, new_rating):
@@ -1149,7 +1160,7 @@ def update_own_review(userid, right_frame):
 
         ttk.Label(update_fields_frame, text=f"Update Review {review_id}").grid(row=0, column=0, columnspan=2, pady=10)
 
-        ttk.Label(update_fields_frame, text="Rating:").grid(row=1, column=0, padx=10, pady=10)
+        ttk.Label(update_fields_frame, text="Rating(1-5):").grid(row=1, column=0, padx=10, pady=10)
         rating_entry = ttk.Entry(update_fields_frame)
         rating_entry.grid(row=1, column=1, padx=10, pady=10)
         rating_entry.insert(0, current_rating)
@@ -1162,6 +1173,16 @@ def update_own_review(userid, right_frame):
         def save_review():
             new_rating = rating_entry.get()
             new_content = content_entry.get()
+            
+            # Validate rating
+            try:
+                new_rating = int(new_rating)
+                if new_rating < 1 or new_rating > 5:
+                    raise ValueError
+            except ValueError:
+                messagebox.showerror("Error", "Please enter a valid rating between 1 and 5")
+                return
+
             update_review(review_id, new_content, new_rating)
 
             # Refresh the Treeview
