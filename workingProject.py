@@ -1685,65 +1685,49 @@ def update_food_establishment_new():
     
     update_est_window.mainloop()
 
-# Function to fetch establishments from the database
-# Function to fetch establishments from the database
-def fetch_establishments():
-    conn = connect_to_db()
-    cursor = conn.cursor()
-    cursor.execute("SELECT foodEst_id, foodEst_name FROM food_establishment")
-    establishments = cursor.fetchall()
-    cursor.close()
-    conn.close()
-    return establishments
 
-# Function to fetch food items from the database for a given establishment
-def fetch_food_items(establishment_id):
-    conn = connect_to_db()
-    cursor = conn.cursor()
-    cursor.execute("SELECT foodItem_id, foodItem_name, foodItem_price, foodItem_type, foodItem_desc FROM food_item WHERE foodEst_id = %s", (establishment_id,))
-    items = cursor.fetchall()
-    cursor.close()
-    conn.close()
-    return items
 
-# Function to fetch food types from the database
-def fetch_food_types():
-    conn = connect_to_db()
-    cursor = conn.cursor()
-    cursor.execute("SHOW COLUMNS FROM food_item LIKE 'foodItem_type'")
-    result = cursor.fetchone()[1]
-    cursor.close()
-    conn.close()
-    food_types = result.replace("enum(", "").replace(")", "").replace("'", "").split(",")
-    return food_types
 
-# Function to handle selection of a food item
-def on_item_select(event, item_var, name_entry, price_entry, type_var, description_entry, items):
-    selected_item = item_var.get()
-    item_id = int(selected_item.split(' - ')[0])
-    for item in items:
-        if item[0] == item_id:
-            name_entry.delete(0, tk.END)
-            name_entry.insert(0, item[1])
-            price_entry.delete(0, tk.END)
-            price_entry.insert(0, item[2])
-            type_var.set(item[3])
-            description_entry.delete(0, tk.END)
-            description_entry.insert(0, item[4])
-            break
 
-# Function to handle selection of an establishment
-def on_establishment_select(event, establishment_var, item_var, name_entry, price_entry, type_var, description_entry, item_dropdown):
-    selected_establishment = establishment_var.get()
-    est_id = int(selected_establishment.split(' - ')[0])
-    items = fetch_food_items(est_id)
-    item_dropdown['values'] = [f"{item[0]} - {item[1]}" for item in items]
-    item_dropdown.bind("<<ComboboxSelected>>", lambda event: on_item_select(event, item_var, name_entry, price_entry, type_var, description_entry, items))
+
+
 
 def update_food_item_new():
     # Create the Toplevel window
     update_item_window = tk.Toplevel()
     update_item_window.title("Update Food Item")
+
+    # Function to fetch establishments from the database
+    def fetch_establishments():
+        conn = connect_to_db()
+        cursor = conn.cursor()
+        cursor.execute("SELECT foodEst_id, foodEst_name FROM food_establishment")
+        establishments = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        return establishments
+    
+    # Function to fetch food items from the database for a given establishment
+    def fetch_food_items(establishment_id):
+        conn = connect_to_db()
+        cursor = conn.cursor()
+        cursor.execute("SELECT foodItem_id, foodItem_name, foodItem_price, foodItem_type, foodItem_desc FROM food_item WHERE foodEst_id = %s", (establishment_id,))
+        items = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        return items
+    
+    # Function to fetch food types from the database
+    def fetch_food_types():
+        conn = connect_to_db()
+        cursor = conn.cursor()
+        cursor.execute("SHOW COLUMNS FROM food_item LIKE 'foodItem_type'")
+        result = cursor.fetchone()[1]
+        cursor.close()
+        conn.close()
+        food_types = result.replace("enum(", "").replace(")", "").replace("'", "").split(",")
+        return food_types
+
 
     establishments = fetch_establishments()
     food_types = fetch_food_types()
@@ -1760,6 +1744,29 @@ def update_food_item_new():
     item_var = tk.StringVar()
     item_dropdown = ttk.Combobox(update_item_window, textvariable=item_var)
     item_dropdown.grid(row=1, column=1, padx=10, pady=5)
+
+    # Function to handle selection of a food item
+    def on_item_select(event, item_var, name_entry, price_entry, type_var, description_entry, items):
+        selected_item = item_var.get()
+        item_id = int(selected_item.split(' - ')[0])
+        for item in items:
+            if item[0] == item_id:
+                name_entry.delete(0, tk.END)
+                name_entry.insert(0, item[1])
+                price_entry.delete(0, tk.END)
+                price_entry.insert(0, item[2])
+                type_var.set(item[3])
+                description_entry.delete(0, tk.END)
+                description_entry.insert(0, item[4])
+                break
+
+    # Function to handle selection of an establishment
+    def on_establishment_select(event, establishment_var, item_var, name_entry, price_entry, type_var, description_entry, item_dropdown):
+        selected_establishment = establishment_var.get()
+        est_id = int(selected_establishment.split(' - ')[0])
+        items = fetch_food_items(est_id)
+        item_dropdown['values'] = [f"{item[0]} - {item[1]}" for item in items]
+        item_dropdown.bind("<<ComboboxSelected>>", lambda event: on_item_select(event, item_var, name_entry, price_entry, type_var, description_entry, items))
     
     # Bind the selection event to update item dropdown
     establishment_dropdown.bind("<<ComboboxSelected>>", lambda event: on_establishment_select(event, establishment_var, item_var, name_entry, price_entry, type_var, description_entry, item_dropdown))
@@ -1785,6 +1792,25 @@ def update_food_item_new():
     tk.Label(update_item_window, text="Description:").grid(row=5, column=0, padx=10, pady=5)
     description_entry = tk.Entry(update_item_window)
     description_entry.grid(row=5, column=1, padx=10, pady=5)
+
+    def update_entry(establishment_var, item_var, name_entry, price_entry, type_var, description_entry):
+        selected_item = item_var.get()
+        item_id = int(selected_item.split(' - ')[0])
+        name = name_entry.get()
+        price = price_entry.get()
+        type_ = type_var.get()
+        description = description_entry.get()
+
+        connection = connect_to_db()
+        if connection:
+            cursor = connection.cursor()
+            cursor.execute("UPDATE food_item SET foodItem_name = %s, foodItem_price = %s, foodItem_type = %s, foodItem_desc = %s WHERE foodItem_id = %s", (name, price, type_, description, item_id))
+            connection.commit()
+            cursor.close()
+            connection.close() 
+        
+        # Print or perform the actual update operation here
+        print(f"Updating: {selected_item}, Name: {name}, Price: {price}, Type: {type_}, Description: {description}")
     
     # Submit Button
     submit_button = tk.Button(update_item_window, text="Update", command=lambda: update_entry(establishment_var, item_var, name_entry, price_entry, type_var, description_entry))
@@ -1792,25 +1818,7 @@ def update_food_item_new():
     
     update_item_window.mainloop()
 
-def update_entry(establishment_var, item_var, name_entry, price_entry, type_var, description_entry):
-    # Placeholder function for updating the entry
-    selected_item = item_var.get()
-    item_id = int(selected_item.split(' - ')[0])
-    name = name_entry.get()
-    price = price_entry.get()
-    type_ = type_var.get()
-    description = description_entry.get()
 
-    connection = connect_to_db()
-    if connection:
-        cursor = connection.cursor()
-        cursor.execute("UPDATE food_item SET foodItem_name = %s, foodItem_price = %s, foodItem_type = %s, foodItem_desc = %s WHERE foodItem_id = %s", (name, price, type_, description, item_id))
-        connection.commit()
-        cursor.close()
-        connection.close() 
-    
-    # Print or perform the actual update operation here
-    print(f"Updating: {selected_item}, Name: {name}, Price: {price}, Type: {type_}, Description: {description}")
 
 
 # Define the login function
