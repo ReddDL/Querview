@@ -1218,51 +1218,78 @@ def delete_review(review_id):
 
 # 1F -- Delete a food review on a food establishment or a food item
 def delete_own_review(userid, right_frame):
-    records = get_food_reviews_by_user(userid)
+    food_records = get_food_reviews_by_user(userid)
+    establishment_records = get_establishment_reviews_by_user(userid)
 
     # Clear right frame
     for widget in right_frame.winfo_children():
         widget.destroy()
 
-    # Create a frame for the review deletion
-    delete_frame = tk.Frame(right_frame)
-    delete_frame.pack(expand=True, fill=tk.BOTH)
+    # Create frames for food and establishment reviews
+    review_frame = tk.Frame(right_frame)
+    review_frame.pack(side=tk.LEFT, expand=True, fill=tk.BOTH)
 
-    # Create a Treeview to display the records
-    tree = ttk.Treeview(delete_frame)
-    tree.pack(side=tk.LEFT, expand=True, fill=tk.BOTH)
+    delete_fields_frame = tk.Frame(right_frame)
 
-    # Define columns
-    tree["columns"] = ("ID", "Date", "Content", "Rating", "Item/Establishment")
+    # Create a Treeview to display the food reviews
+    tree_items = ttk.Treeview(review_frame)
+    tree_items.pack(side=tk.TOP, expand=True, fill=tk.BOTH, padx=5, pady=(5, 2))
 
-    # Format columns
-    tree.column("#0", width=0, stretch=tk.NO)  # Hide first empty column
-    tree.column("ID", anchor=tk.W, width=50)
-    tree.column("Date", anchor=tk.W, width=100)
-    tree.column("Content", anchor=tk.W, width=200)
-    tree.column("Rating", anchor=tk.W, width=50)
-    tree.column("Item/Establishment", anchor=tk.W, width=100)
+    # Define columns for food reviews
+    tree_items["columns"] = ("ID", "Date", "Content", "Rating", "Food Item")
 
-    # Create headings
-    tree.heading("ID", text="ID")
-    tree.heading("Date", text="Date")
-    tree.heading("Content", text="Content")
-    tree.heading("Rating", text="Rating")
-    tree.heading("Item/Establishment", text="Item/Establishment")
+    # Format columns for food reviews
+    tree_items.column("#0", width=0, stretch=tk.NO)  # Hide first empty column
+    tree_items.column("ID", anchor=tk.W, width=50)
+    tree_items.column("Date", anchor=tk.W, width=100)
+    tree_items.column("Content", anchor=tk.W, width=400)
+    tree_items.column("Rating", anchor=tk.W, width=50)
+    tree_items.column("Food Item", anchor=tk.W, width=200)
 
-    # Add records to the Treeview
-    for record in records:
-        tree.insert("", tk.END, values=record)
+    # Create headings for food reviews
+    tree_items.heading("ID", text="ID")
+    tree_items.heading("Date", text="Date")
+    tree_items.heading("Content", text="Content")
+    tree_items.heading("Rating", text="Rating")
+    tree_items.heading("Food Item", text="Food Item")
 
-    def on_double_click(event):
+    # Add food review records to the Treeview
+    for record in food_records:
+        tree_items.insert("", tk.END, values=record)
+
+    # Create a Treeview to display the establishment reviews
+    tree_establishments = ttk.Treeview(review_frame)
+    tree_establishments.pack(side=tk.BOTTOM, expand=True, fill=tk.BOTH, padx=5, pady=(2, 5))
+
+    # Define columns for establishment reviews
+    tree_establishments["columns"] = ("ID", "Date", "Content", "Rating", "Establishment")
+
+    # Format columns for establishment reviews
+    tree_establishments.column("#0", width=0, stretch=tk.NO)  # Hide first empty column
+    tree_establishments.column("ID", anchor=tk.W, width=50)
+    tree_establishments.column("Date", anchor=tk.W, width=100)
+    tree_establishments.column("Content", anchor=tk.W, width=400)
+    tree_establishments.column("Rating", anchor=tk.W, width=50)
+    tree_establishments.column("Establishment", anchor=tk.W, width=200)
+
+    # Create headings for establishment reviews
+    tree_establishments.heading("ID", text="ID")
+    tree_establishments.heading("Date", text="Date")
+    tree_establishments.heading("Content", text="Content")
+    tree_establishments.heading("Rating", text="Rating")
+    tree_establishments.heading("Establishment", text="Establishment")
+
+    # Add establishment review records to the Treeview
+    for record in establishment_records:
+        tree_establishments.insert("", tk.END, values=record)
+
+    def on_item_double_click(event, tree):
         selected_item = tree.selection()
         if not selected_item:
             return
         selected_item = selected_item[0]
         values = tree.item(selected_item, "values")
         review_id = values[0]
-        current_content = values[2]
-        current_rating = values[3]
 
         def delete_review_record():
             confirmed = messagebox.askyesno("Confirm Deletion", "Are you sure you want to delete this review?")
@@ -1273,8 +1300,12 @@ def delete_own_review(userid, right_frame):
         # Call the delete_review_record function
         delete_review_record()
 
-    # Bind double-click event to the Treeview
-    tree.bind("<Double-1>", on_double_click)
+    # Bind double-click event to the Treeview for food reviews
+    tree_items.bind("<Double-1>", lambda event: on_item_double_click(event, tree_items))
+
+    # Bind double-click event to the Treeview for establishment reviews
+    tree_establishments.bind("<Double-1>", lambda event: on_item_double_click(event, tree_establishments))
+
 
 # 2F - Add a food establishment
 def add_food_establishment_form(right_frame):
