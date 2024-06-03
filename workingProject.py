@@ -8,9 +8,9 @@ def connect_to_db():
     try:
         connection = mysql.connector.connect(
             host='localhost',
-            database='127projectv3',
+            database='127projectv2',
             user='root',
-            password='052508' # replace ng password niyo 
+            password='secret' # replace ng password niyo 
         )
         if connection.is_connected():
             return connection
@@ -1601,6 +1601,216 @@ def add_food_est_new():
 
     show_add_form()
 
+def update_food_establishment_new():
+    # Create the Toplevel window
+    update_est_window = tk.Toplevel()
+    update_est_window.title("Update Food Establishment")
+
+    connection = connect_to_db()
+    if connection:
+        cursor = connection.cursor()
+        cursor.execute("SELECT foodEst_id, foodEst_name, foodEst_loc, foodEst_type FROM food_establishment")
+        establishments = cursor.fetchall()
+        cursor.execute("SHOW COLUMNS FROM food_establishment LIKE 'foodEst_type'")
+        result = cursor.fetchone()[1]
+        cursor.close()
+        connection.close() 
+    
+        food_types = result.replace("enum(", "").replace(")", "").replace("'", "").split(",")
+
+    # Establishments Dropdown
+    tk.Label(update_est_window, text="Select Establishment:").grid(row=0, column=0, padx=10, pady=5)
+    establishment_var = tk.StringVar()
+    establishment_dropdown = ttk.Combobox(update_est_window, textvariable=establishment_var)
+    establishment_dropdown['values'] = [f"{est[0]} - {est[1]}" for est in establishments]
+    establishment_dropdown.grid(row=0, column=1, padx=10, pady=5)
+    
+    # Name Entry
+    tk.Label(update_est_window, text="Name:").grid(row=1, column=0, padx=10, pady=5)
+    name_entry = tk.Entry(update_est_window)
+    name_entry.grid(row=1, column=1, padx=10, pady=5)
+    
+    # Location Entry
+    tk.Label(update_est_window, text="Location:").grid(row=2, column=0, padx=10, pady=5)
+    location_entry = tk.Entry(update_est_window)
+    location_entry.grid(row=2, column=1, padx=10, pady=5)
+    
+    # Type Dropdown
+    tk.Label(update_est_window, text="Type:").grid(row=3, column=0, padx=10, pady=5)
+    type_var = tk.StringVar()
+    type_dropdown = ttk.Combobox(update_est_window, textvariable=type_var)
+    type_dropdown['values'] = food_types  # Add actual types
+    type_dropdown.grid(row=3, column=1, padx=10, pady=5)
+
+    def on_establishment_select(event, establishment_var, name_entry, location_entry, type_var, establishments):
+        selected_establishment = establishment_var.get()
+        est_id = int(selected_establishment.split(' - ')[0])
+        for est in establishments:
+            if est[0] == est_id:
+                name_entry.delete(0, tk.END)
+                name_entry.insert(0, est[1])
+                location_entry.delete(0, tk.END)
+                location_entry.insert(0, est[2])
+                type_var.set(est[3])
+                break
+    
+    # Bind the selection event to update other text boxes
+    establishment_dropdown.bind("<<ComboboxSelected>>", lambda event: on_establishment_select(event, establishment_var, name_entry, location_entry, type_var, establishments))
+
+    def update_entry(establishment_var, name_entry, location_entry, type_var, establishments):
+        # Placeholder function for updating the entry
+        selected_establishment = establishment_var.get()
+        est_id = int(selected_establishment.split(' - ')[0])
+        for est in establishments:
+            if est[0] == est_id:
+                name = name_entry.get()
+                location = location_entry.get()
+                type_ = type_var.get()
+
+                connection = connect_to_db()
+                if connection:
+                    cursor = connection.cursor()
+                    cursor.execute("UPDATE food_establishment SET foodEst_name = %s, foodEst_loc = %s, foodEst_type = %s WHERE foodEst_id = %s", (name, location, type_, est_id))
+                    connection.commit()
+                    cursor.close()
+                    connection.close() 
+                
+                # Print or perform the actual update operation here
+                print(f"Updating: {selected_establishment}, Name: {name}, Location: {location}, Type: {type_}")
+                break
+    
+    # Submit Button
+    submit_button = tk.Button(update_est_window, text="Update", command=lambda: update_entry(establishment_var, name_entry, location_entry, type_var, establishments))
+    submit_button.grid(row=4, column=0, columnspan=2, pady=10)
+    
+    update_est_window.mainloop()
+
+def update_food_item_new():
+    # Create the Toplevel window
+    update_item_window = tk.Toplevel()
+    update_item_window.title("Update Food Item")
+
+    # Function to fetch establishments from the database
+    def fetch_establishments():
+        conn = connect_to_db()
+        cursor = conn.cursor()
+        cursor.execute("SELECT foodEst_id, foodEst_name FROM food_establishment")
+        establishments = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        return establishments
+    
+    # Function to fetch food items from the database for a given establishment
+    def fetch_food_items(establishment_id):
+        conn = connect_to_db()
+        cursor = conn.cursor()
+        cursor.execute("SELECT foodItem_id, foodItem_name, foodItem_price, foodItem_type, foodItem_desc FROM food_item WHERE foodEst_id = %s", (establishment_id,))
+        items = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        return items
+    
+    # Function to fetch food types from the database
+    def fetch_food_types():
+        conn = connect_to_db()
+        cursor = conn.cursor()
+        cursor.execute("SHOW COLUMNS FROM food_item LIKE 'foodItem_type'")
+        result = cursor.fetchone()[1]
+        cursor.close()
+        conn.close()
+        food_types = result.replace("enum(", "").replace(")", "").replace("'", "").split(",")
+        return food_types
+
+
+    establishments = fetch_establishments()
+    food_types = fetch_food_types()
+
+    # Establishments Dropdown
+    tk.Label(update_item_window, text="Select Establishment:").grid(row=0, column=0, padx=10, pady=5)
+    establishment_var = tk.StringVar()
+    establishment_dropdown = ttk.Combobox(update_item_window, textvariable=establishment_var)
+    establishment_dropdown['values'] = [f"{est[0]} - {est[1]}" for est in establishments]
+    establishment_dropdown.grid(row=0, column=1, padx=10, pady=5)
+    
+    # Items Dropdown
+    tk.Label(update_item_window, text="Select Food Item:").grid(row=1, column=0, padx=10, pady=5)
+    item_var = tk.StringVar()
+    item_dropdown = ttk.Combobox(update_item_window, textvariable=item_var)
+    item_dropdown.grid(row=1, column=1, padx=10, pady=5)
+
+    # Function to handle selection of a food item
+    def on_item_select(event, item_var, name_entry, price_entry, type_var, description_entry, items):
+        selected_item = item_var.get()
+        item_id = int(selected_item.split(' - ')[0])
+        for item in items:
+            if item[0] == item_id:
+                name_entry.delete(0, tk.END)
+                name_entry.insert(0, item[1])
+                price_entry.delete(0, tk.END)
+                price_entry.insert(0, item[2])
+                type_var.set(item[3])
+                description_entry.delete(0, tk.END)
+                description_entry.insert(0, item[4])
+                break
+
+    # Function to handle selection of an establishment
+    def on_establishment_select(event, establishment_var, item_var, name_entry, price_entry, type_var, description_entry, item_dropdown):
+        selected_establishment = establishment_var.get()
+        est_id = int(selected_establishment.split(' - ')[0])
+        items = fetch_food_items(est_id)
+        item_dropdown['values'] = [f"{item[0]} - {item[1]}" for item in items]
+        item_dropdown.bind("<<ComboboxSelected>>", lambda event: on_item_select(event, item_var, name_entry, price_entry, type_var, description_entry, items))
+    
+    # Bind the selection event to update item dropdown
+    establishment_dropdown.bind("<<ComboboxSelected>>", lambda event: on_establishment_select(event, establishment_var, item_var, name_entry, price_entry, type_var, description_entry, item_dropdown))
+    
+    # Name Entry
+    tk.Label(update_item_window, text="Name:").grid(row=2, column=0, padx=10, pady=5)
+    name_entry = tk.Entry(update_item_window)
+    name_entry.grid(row=2, column=1, padx=10, pady=5)
+    
+    # Price Entry
+    tk.Label(update_item_window, text="Price:").grid(row=3, column=0, padx=10, pady=5)
+    price_entry = tk.Entry(update_item_window)
+    price_entry.grid(row=3, column=1, padx=10, pady=5)
+    
+    # Type Dropdown
+    tk.Label(update_item_window, text="Type:").grid(row=4, column=0, padx=10, pady=5)
+    type_var = tk.StringVar()
+    type_dropdown = ttk.Combobox(update_item_window, textvariable=type_var)
+    type_dropdown['values'] = food_types
+    type_dropdown.grid(row=4, column=1, padx=10, pady=5)
+
+    # Description Entry
+    tk.Label(update_item_window, text="Description:").grid(row=5, column=0, padx=10, pady=5)
+    description_entry = tk.Entry(update_item_window)
+    description_entry.grid(row=5, column=1, padx=10, pady=5)
+
+    def update_entry(establishment_var, item_var, name_entry, price_entry, type_var, description_entry):
+        selected_item = item_var.get()
+        item_id = int(selected_item.split(' - ')[0])
+        name = name_entry.get()
+        price = price_entry.get()
+        type_ = type_var.get()
+        description = description_entry.get()
+
+        connection = connect_to_db()
+        if connection:
+            cursor = connection.cursor()
+            cursor.execute("UPDATE food_item SET foodItem_name = %s, foodItem_price = %s, foodItem_type = %s, foodItem_desc = %s WHERE foodItem_id = %s", (name, price, type_, description, item_id))
+            connection.commit()
+            cursor.close()
+            connection.close() 
+        
+        # Print or perform the actual update operation here
+        print(f"Updating: {selected_item}, Name: {name}, Price: {price}, Type: {type_}, Description: {description}")
+    
+    # Submit Button
+    submit_button = tk.Button(update_item_window, text="Update", command=lambda: update_entry(establishment_var, item_var, name_entry, price_entry, type_var, description_entry))
+    submit_button.grid(row=6, column=0, columnspan=2, pady=10)
+    
+    update_item_window.mainloop()
+
 def delete_food_item_new():
     # Create a Tkinter window
     root = tk.Tk()
@@ -1795,7 +2005,6 @@ def delete_food_est_new():
 
     root.mainloop()
 
-
 # Define the login function
 def login():
     def check_credentials():
@@ -1911,7 +2120,7 @@ def show_main_app(userid):
     est_type_entry.grid(row=3, column=1)
 
     ttk.Button(est_frame, text="Add", command=lambda:add_food_establishment(est_name_entry, est_location_entry, est_type_entry)).grid(row=4, column=0)
-    ttk.Button(est_frame, text="Update", command=lambda:update_food_establishment(est_name_entry, est_location_entry, est_type_entry, est_id_entry)).grid(row=4, column=1)
+    ttk.Button(est_frame, text="Update", command=lambda:update_food_establishment_new()).grid(row=4, column=1)
     ttk.Button(est_frame, text="Delete", command=lambda:delete_food_establishment(est_id_entry)).grid(row=4, column=2)
 
     # Food Item
@@ -1943,7 +2152,7 @@ def show_main_app(userid):
     item_estid_entry.grid(row=5, column=1)
 
     ttk.Button(item_frame, text="Add", command=lambda:add_food_item(item_name_entry, item_price_entry, item_type_entry, item_desc_entry, item_estid_entry)).grid(row=6, column=0)
-    ttk.Button(item_frame, text="Update", command=lambda:update_food_item(item_name_entry, item_price_entry, item_type_entry, item_desc_entry, item_id_entry)).grid(row=6, column=1)
+    ttk.Button(item_frame, text="Update", command=lambda:update_food_item_new()).grid(row=6, column=1)
     ttk.Button(item_frame, text="Delete", command=lambda:delete_food_item(item_id_entry)).grid(row=6, column=2)
 
     # Food Review
@@ -1979,7 +2188,7 @@ def show_main_app(userid):
     review_food_item_id_entry.grid(row=6, column=1)
 
     ttk.Button(est_frame, text="Add", command=lambda: add_food_establishment(est_name_entry, est_location_entry, est_type_entry)).grid(row=4, column=0)
-    ttk.Button(est_frame, text="Update", command=lambda: update_food_establishment(est_id_entry, est_name_entry, est_location_entry, est_type_entry)).grid(row=4, column=1)
+    ttk.Button(est_frame, text="Update", command=update_food_establishment_new).grid(row=4, column=1)
     ttk.Button(est_frame, text="Delete", command=lambda: delete_food_establishment(est_id_entry)).grid(row=4, column=2)
 
     ttk.Button(add_update_frame, text="Add a food item", command=lambda: add_food_item_with_choice_new()).grid(row=7, column=0, pady=10)
