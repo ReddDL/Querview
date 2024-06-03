@@ -8,9 +8,9 @@ def connect_to_db():
     try:
         connection = mysql.connector.connect(
             host='localhost',
-            database='127projectv2',
+            database='127projectV2',
             user='root',
-            password='andrei0421'  # replace ng password niyo 
+            password='secret'  # replace ng password niyo 
         )
         if connection.is_connected():
             return connection
@@ -29,7 +29,16 @@ def view_food_establishments(view_right_frame):
     connection = connect_to_db()
     if connection:
         cursor = connection.cursor()
-        cursor.execute("SELECT foodEst_name, foodEst_loc, foodEst_type, foodEst_rating FROM food_establishment")
+        cursor.execute("""SELECT
+                        fe.foodEst_name, 
+                        fe.foodEst_loc, 
+                        fe.foodEst_type, 
+                        COALESCE(AVG(rating), 0) AS 'AVERAGE RATING' 
+                        FROM food_establishment fe
+                        LEFT JOIN review r 
+                        ON fe.foodEst_id=r.foodEst_id
+                        GROUP BY fe.foodEst_id; 
+                        """)
         records = cursor.fetchall()
         display_records(records, ["Name", "Location", "Type", "Average Rating"], view_right_frame)
         cursor.close()
