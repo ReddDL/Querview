@@ -244,19 +244,30 @@ def view_items_from_estab(view_right_frame):
     connection = connect_to_db()
     if connection:
         cursor = connection.cursor()
-        cursor.execute("""
-            SELECT 
-                fe.foodEst_id,
-                fe.foodEst_name, 
-                fe.foodEst_loc, 
-                fe.foodEst_type, 
-                AVG(r.rating) AS 'AVERAGE RATING' 
-            FROM review r 
-            JOIN food_establishment fe 
-            ON r.foodEst_id = fe.foodEst_id 
-            WHERE r.foodEst_id IS NOT NULL 
-            GROUP BY r.foodEst_id;
-        """)
+        # cursor.execute("""
+        #     SELECT 
+        #         fe.foodEst_id,
+        #         fe.foodEst_name, 
+        #         fe.foodEst_loc, 
+        #         fe.foodEst_type, 
+        #         AVG(r.rating) AS 'AVERAGE RATING' 
+        #     FROM review r 
+        #     JOIN food_establishment fe 
+        #     ON r.foodEst_id = fe.foodEst_id 
+        #     WHERE r.foodEst_id IS NOT NULL 
+        #     GROUP BY r.foodEst_id;
+        # """)
+        cursor.execute("""SELECT
+                        fe.foodEst_id, 
+                        fe.foodEst_name, 
+                        fe.foodEst_loc, 
+                        fe.foodEst_type, 
+                        COALESCE(AVG(rating), 0) AS 'AVERAGE RATING' 
+                        FROM food_establishment fe
+                        LEFT JOIN review r 
+                        ON fe.foodEst_id=r.foodEst_id
+                        GROUP BY fe.foodEst_id; 
+                        """)
         records = cursor.fetchall()
         cursor.close()
         connection.close()
